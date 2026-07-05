@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>银饰定价计算器</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1F4E79">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="银饰计算器">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
+            margin: 0; padding: 0;
+            background: linear-gradient(135deg, #4A4A4A 0%, #8B7355 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 500px; margin: 0 auto; padding: 16px; }
+        .header { text-align: center; color: white; padding: 20px 0 12px; position: relative; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: bold; }
+        .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.85; }
+        .nav-back {
+            position: absolute; left: 0; top: 22px;
+            color: white; text-decoration: none; font-size: 14px;
+            background: rgba(255,255,255,0.18); padding: 6px 12px; border-radius: 8px;
+        }
+        .card {
+            background: white; border-radius: 16px; padding: 20px;
+            margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 15px; font-weight: bold; color: #5D4037;
+            margin-bottom: 14px; display: flex; align-items: center;
+        }
+        .card-title::before {
+            content: ""; display: inline-block;
+            width: 4px; height: 15px; background: #8B7355;
+            border-radius: 2px; margin-right: 8px;
+        }
+        .input-group { margin-bottom: 14px; }
+        .input-group label {
+            display: block; font-size: 13px; color: #666; margin-bottom: 6px;
+        }
+        .input-group input {
+            width: 100%; height: 46px; border: 2px solid #E0E0E0;
+            border-radius: 8px; padding: 0 14px; font-size: 17px; color: #333;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus { outline: none; border-color: #8B7355; }
+        .settings-group { display: flex; gap: 10px; }
+        .settings-group .input-group { flex: 1; margin-bottom: 0; }
+        .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+        /* 模式切换 - 强化样式确保显示 */
+        .mode-switch {
+            display: flex !important;
+            background: #F0F0F0;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 16px;
+            border: 2px solid #E0E0E0;
+        }
+        .mode-btn {
+            flex: 1;
+            height: 42px;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.25s;
+            margin: 0 2px;
+        }
+        .mode-btn.active {
+            background: #5D4037 !important;
+            color: white !important;
+            box-shadow: 0 2px 8px rgba(93,64,55,0.3);
+        }
+        .mode-btn:hover { background: rgba(93,64,55,0.1); }
+
+        /* 模式区域 */
+        #sectionGram { display: block; }
+        #sectionFixed { display: none; }
+
+        /* 直播报价大卡片 */
+        .live-price-card {
+            background: linear-gradient(135deg, #C0A062 0%, #8B7355 100%);
+            color: white; border-radius: 18px; padding: 22px 20px 18px;
+            text-align: center; margin-bottom: 14px;
+            box-shadow: 0 8px 24px rgba(139,115,85,0.45);
+            animation: popIn 0.35s ease-out; display: none;
+        }
+        .live-price-card.show { display: block; }
+        @keyframes popIn {
+            0% { transform: scale(0.88); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .live-price-top { font-size: 13px; letter-spacing: 3px; opacity: 0.9; margin-bottom: 6px; }
+        .live-price-amount {
+            font-size: 62px; font-weight: bold; line-height: 1;
+            margin: 8px 0; text-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+        .live-price-detail { font-size: 13px; opacity: 0.88; margin: 8px 0 14px; }
+        .live-price-copy {
+            background: rgba(255,255,255,0.22); color: white;
+            border: 1px solid rgba(255,255,255,0.4); border-radius: 8px;
+            padding: 9px 0; font-size: 14px; font-weight: bold;
+            width: 100%; cursor: pointer;
+        }
+        .live-price-copy:active { background: rgba(255,255,255,0.35); }
+
+        /* 详情结果卡 */
+        .result-card {
+            background: linear-gradient(135deg, #5D4037 0%, #8B7355 100%);
+            color: white; border-radius: 16px; padding: 16px 20px;
+            margin-bottom: 14px; display: none;
+        }
+        .result-card.show { display: block; }
+        .result-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.18);
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-item.highlight { background: rgba(255,235,150,0.15); border-radius: 6px; padding: 12px 10px; margin: 6px -10px; border-bottom: 1px solid rgba(255,235,150,0.2); }
+        .result-label { font-size: 13px; opacity: 0.88; }
+        .result-value { font-size: 17px; font-weight: bold; }
+        .result-sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+        .profit-pos { color: #B9F6CA; }
+        .profit-neg { color: #FF8A80; }
+        .save-tag { background: #FFD54F; color: #5D4037; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 6px; }
+
+        .btn {
+            width: 100%; height: 50px; border: none; border-radius: 12px;
+            font-size: 17px; font-weight: bold; color: white; cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+            background: linear-gradient(135deg, #8B7355 0%, #5D4037 100%);
+            box-shadow: 0 4px 12px rgba(139,115,85,0.4);
+        }
+        .btn-secondary { background: #E0E0E0; color: #666; margin-top: 10px; }
+
+        /* 标签栏 */
+        .tab-bar {
+            display: flex; background: white; border-radius: 12px;
+            padding: 4px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .tab {
+            flex: 1; height: 42px; border: none; background: transparent;
+            font-size: 13px; font-weight: bold; color: #888; cursor: pointer;
+            border-radius: 8px;
+        }
+        .tab.active { background: #5D4037; color: white; }
+
+        /* 历史记录 */
+        .history-list { max-height: 280px; overflow-y: auto; }
+        .history-item {
+            display: flex; justify-content: space-between; padding: 12px;
+            background: #F5F5F5; border-radius: 10px; margin-bottom: 8px; font-size: 13px;
+        }
+        .history-price { color: #5D4037; font-weight: bold; font-size: 16px; }
+        .history-cost { color: #777; margin-top: 3px; }
+        .badge { display: inline-block; padding: 3px 7px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 4px; }
+        .badge-profit { background: #E8F5E9; color: #1B5E20; }
+        .badge-rate { background: #E3F2FD; color: #1565C0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a class="nav-back" href="index.html">返回 服饰</a>
+            <h1>银饰定价计算器</h1>
+            <p>折扣利润 · 透明报价</p>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab active" onclick="switchTab('calc')">定价</button>
+            <button class="tab" onclick="switchTab('history')">记录</button>
+            <button class="tab" onclick="switchTab('settings')">设置</button>
+        </div>
+
+        <!-- 定价页 -->
+        <div id="page-calc">
+            <!-- 直播报价大卡片 -->
+            <div class="live-price-card" id="livePriceCard">
+                <div class="live-price-top">客户售价</div>
+                <div class="live-price-amount" id="livePriceAmount">¥—</div>
+                <div class="live-price-detail" id="livePriceDetail">净利润 ¥— · 利润率 —%</div>
+                <button class="live-price-copy" onclick="copyPrice()">复制报价给客人</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">商品信息</div>
+
+                <!-- 模式切换 -->
+                <div class="mode-switch">
+                    <button class="mode-btn active" id="btnGram" onclick="switchMode('gram')">按克算</button>
+                    <button class="mode-btn" id="btnFixed" onclick="switchMode('fixed')">一口价</button>
+                </div>
+
+                <!-- 按克算 -->
+                <div id="sectionGram">
+                    <div class="input-group">
+                        <label>银饰克数（克）</label>
+                        <input type="number" id="grams" placeholder="如 50" step="0.1" oninput="calc()">
+                    </div>
+                    <div class="input-group">
+                        <label>银价（元/克）</label>
+                        <input type="number" id="silverPrice" value="34" step="0.1" oninput="calc()">
+                    </div>
+                </div>
+
+                <!-- 一口价 -->
+                <div id="sectionFixed">
+                    <div class="input-group">
+                        <label>商品售价（元，直接输入一口价）</label>
+                        <input type="number" id="fixedPrice" placeholder="如 500" step="1" oninput="calc()">
+                    </div>
+                    <div class="input-group">
+                        <label>商品重量（克，用于算物流，可估算）</label>
+                        <input type="number" id="fixedGrams" placeholder="如 15" step="0.1" oninput="calc()">
+                    </div>
+                    <div class="hint">利润 = 售价 - 进货成本(已享7折) - 物流；凑单满3000享折扣</div>
+                </div>
+            </div>
+
+            <!-- 详情结果卡 -->
+            <div class="result-card" id="resultCard">
+                <div class="result-item">
+                    <span class="result-label">商品售价</span>
+                    <span class="result-value" id="retailPrice">¥—</span>
+                </div>
+                <div class="result-item" id="discountRow">
+                    <span class="result-label">折扣状态</span>
+                    <span class="result-value" id="discountStatus">—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">进货价（折扣后）</span>
+                    <span class="result-value" id="costPrice">¥—</span>
+                </div>
+                <div class="result-item highlight">
+                    <span class="result-label">折扣节省<span class="result-sub">你的进货差价</span></span>
+                    <span class="result-value profit-pos" id="saving">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">国际物流<span class="result-sub">可混寄，按克均摊</span></span>
+                    <span class="result-value" id="logIntl">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">国内物流<span class="result-sub">必须单件，不足1kg按1kg</span></span>
+                    <span class="result-value" id="logDomestic">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">物流合计</span>
+                    <span class="result-value" id="logistics">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">总成本</span>
+                    <span class="result-value" id="totalCost">¥—</span>
+                </div>
+                <div class="result-item highlight">
+                    <span class="result-label">净利润<span class="result-sub">售价 - 进货 - 物流</span></span>
+                    <span class="result-value profit-pos" id="profit">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">利润率</span>
+                    <span class="result-value" id="profitRate">—%</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="addToHistory()">保存记录</button>
+            <button class="btn btn-secondary" onclick="resetForm()">重置</button>
+        </div>
+
+        <!-- 历史记录页 -->
+        <div id="page-history" style="display:none;">
+            <div class="card">
+                <div class="card-title">定价记录</div>
+                <div class="history-list" id="historyList">
+                    <div style="text-align:center;color:#bbb;padding:40px 0;font-size:14px;">
+                        暂无记录<br><span style="font-size:12px;">去「定价」页计算并保存</span>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="clearHistory()" style="margin-top:12px;">清空记录</button>
+            </div>
+        </div>
+
+        <!-- 设置页 -->
+        <div id="page-settings" style="display:none;">
+            <div class="card">
+                <div class="card-title">折扣规则</div>
+                <div class="input-group">
+                    <label>折扣门槛（元，凑单满此价享受折扣）</label>
+                    <input type="number" id="discountThreshold" value="3000" onchange="saveSettings()">
+                </div>
+                <div class="input-group">
+                    <label>折扣率（0.7 = 7折）</label>
+                    <input type="number" id="discountRate" value="0.7" step="0.01" onchange="saveSettings()">
+                </div>
+                <div class="hint">凑单满门槛后，所有商品按折扣率拿货</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">物流成本（元/kg）</div>
+                <div class="settings-group">
+                    <div class="input-group">
+                        <label>国外寄回国内</label>
+                        <input type="number" id="intlRate" value="480" onchange="saveSettings()">
+                    </div>
+                    <div class="input-group">
+                        <label>国内发出（单件）</label>
+                        <input type="number" id="domesticRate" value="8" onchange="saveSettings()">
+                    </div>
+                </div>
+                <div class="hint" style="margin-top:8px;">国际：可混寄按实际克数；国内：必须单件，不足1kg按1kg</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">银价</div>
+                <div class="input-group">
+                    <label>默认银价（元/克）</label>
+                    <input type="number" id="defaultSilverPrice" value="34" step="0.1" onchange="saveSettings();document.getElementById('silverPrice').value=this.value;calc();">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="resetSettings()" style="margin-top:6px;">恢复默认</button>
+        </div>
+    </div>
+
+    <script>
+    // ===== 状态 =====
+    let history = JSON.parse(localStorage.getItem('silverHistory') || '[]');
+    let currentMode = 'gram';
+
+    // ===== 标签切换 =====
+    function switchTab(name) {
+        document.getElementById('page-calc').style.display = name === 'calc' ? 'block' : 'none';
+        document.getElementById('page-history').style.display = name === 'history' ? 'block' : 'none';
+        document.getElementById('page-settings').style.display = name === 'settings' ? 'block' : 'none';
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', (i === 0 && name === 'calc') || (i === 1 && name === 'history') || (i === 2 && name === 'settings'));
+        });
+        if (name === 'history') renderHistory();
+    }
+
+    // ===== 模式切换 =====
+    function switchMode(mode) {
+        currentMode = mode;
+        document.getElementById('btnGram').classList.toggle('active', mode === 'gram');
+        document.getElementById('btnFixed').classList.toggle('active', mode === 'fixed');
+        document.getElementById('sectionGram').style.display = mode === 'gram' ? 'block' : 'none';
+        document.getElementById('sectionFixed').style.display = mode === 'fixed' ? 'block' : 'none';
+        hideResult();
+        calc();
+    }
+
+    // ===== 计算入口 =====
+    function calc() {
+        if (currentMode === 'gram') {
+            calcGram();
+        } else {
+            calcFixed();
+        }
+    }
+
+    // ===== 按克算 =====
+    function calcGram() {
+        const grams = parseFloat(document.getElementById('grams').value);
+        if (!grams || grams <= 0) { hideResult(); return; }
+
+        const silverPrice = parseFloat(document.getElementById('silverPrice').value) || 0;
+        const threshold = parseFloat(document.getElementById('discountThreshold').value) || 3000;
+        const discountRate = parseFloat(document.getElementById('discountRate').value) || 0.7;
+        const intlRate = parseFloat(document.getElementById('intlRate').value) || 480;
+        const domesticRate = parseFloat(document.getElementById('domesticRate').value) || 8;
+
+        const retailPrice = grams * silverPrice;
+        const isDiscount = retailPrice >= threshold;
+        const costPrice = isDiscount ? retailPrice * discountRate : retailPrice;
+        const saving = retailPrice - costPrice;
+
+        const weightKg = grams / 1000;
+        const intlLog = weightKg * intlRate;
+        const domLog = (weightKg < 1 ? 1 : weightKg) * domesticRate;
+        const totalLog = intlLog + domLog;
+        const totalCost = costPrice + totalLog;
+        const profit = retailPrice - totalCost;
+        const profitRate = retailPrice > 0 ? (profit / retailPrice * 100) : 0;
+
+        showResult({
+            retailPrice, isDiscount, discountRate, costPrice, saving,
+            intlLog, domLog, totalLog, totalCost, profit, profitRate,
+            grams
+        });
+    }
+
+    // ===== 一口价 =====
+    function calcFixed() {
+        const retailPrice = parseFloat(document.getElementById('fixedPrice').value);
+        if (!retailPrice || retailPrice <= 0) { hideResult(); return; }
+
+        const discountRate = parseFloat(document.getElementById('discountRate').value) || 0.7;
+        const intlRate = parseFloat(document.getElementById('intlRate').value) || 480;
+        const domesticRate = parseFloat(document.getElementById('domesticRate').value) || 8;
+        const grams = parseFloat(document.getElementById('fixedGrams').value) || 0;
+
+        // 一口价模式：永远按折扣率算（凑单满3000）
+        const costPrice = retailPrice * discountRate;
+        const saving = retailPrice - costPrice;
+
+        const weightKg = grams / 1000;
+        const intlLog = weightKg * intlRate;
+        const domLog = (weightKg < 1 ? 1 : weightKg) * domesticRate;
+        const totalLog = intlLog + domLog;
+        const totalCost = costPrice + (totalLog > 0 ? totalLog : 0);
+        const profit = retailPrice - totalCost;
+        const profitRate = retailPrice > 0 ? (profit / retailPrice * 100) : 0;
+
+        showResult({
+            retailPrice, isDiscount: true, discountRate, costPrice, saving,
+            intlLog, domLog, totalLog, totalCost, profit, profitRate,
+            grams, isFixed: true
+        });
+    }
+
+    // ===== 显示结果 =====
+    function showResult(d) {
+        document.getElementById('resultCard').classList.add('show');
+
+        document.getElementById('retailPrice').textContent = '¥' + d.retailPrice.toFixed(2);
+
+        const ds = document.getElementById('discountStatus');
+        if (d.isDiscount) {
+            ds.innerHTML = '<span style="color:#B9F6CA;">已享 ' + (d.discountRate * 10).toFixed(1) + ' 折</span>';
+        } else {
+            ds.innerHTML = '<span style="color:#FF8A80;">未达门槛 ¥' + document.getElementById('discountThreshold').value + '</span>';
+        }
+
+        document.getElementById('costPrice').textContent = '¥' + d.costPrice.toFixed(2);
+        document.getElementById('saving').textContent = '¥' + d.saving.toFixed(2);
+
+        // 国际物流
+        if (d.grams > 0) {
+            document.getElementById('logIntl').textContent = '¥' + d.intlLog.toFixed(2) + ' (' + d.grams.toFixed(1) + 'g)';
+            // 国内物流
+            const weightKg = d.grams / 1000;
+            let domText = '¥' + d.domLog.toFixed(2);
+            if (weightKg < 1) {
+                domText += ' (按1kg计，实重' + d.grams.toFixed(1) + 'g)';
+            } else {
+                domText += ' (' + d.grams.toFixed(1) + 'g)';
+            }
+            document.getElementById('logDomestic').textContent = domText;
+        } else {
+            document.getElementById('logIntl').textContent = '—';
+            document.getElementById('logDomestic').textContent = '—';
+        }
+        document.getElementById('logistics').textContent = '¥' + d.totalLog.toFixed(2);
+
+        document.getElementById('totalCost').textContent = '¥' + d.totalCost.toFixed(2);
+        document.getElementById('profit').textContent = '¥' + d.profit.toFixed(2);
+        document.getElementById('profit').className = 'result-value ' + (d.profit >= 0 ? 'profit-pos' : 'profit-neg');
+        document.getElementById('profitRate').textContent = d.profitRate.toFixed(1) + '%';
+
+        // 直播报价
+        const intPrice = Math.round(d.retailPrice);
+        document.getElementById('livePriceCard').classList.add('show');
+        document.getElementById('livePriceAmount').textContent = '¥' + intPrice;
+        document.getElementById('livePriceDetail').textContent =
+            '净利润 ¥' + Math.round(d.profit) + ' · 利润率 ' + Math.round(d.profitRate) + '%';
+        window._currentPrice = intPrice;
+    }
+
+    function hideResult() {
+        document.getElementById('resultCard').classList.remove('show');
+        document.getElementById('livePriceCard').classList.remove('show');
+        window._currentPrice = null;
+    }
+
+    // ===== 复制报价 =====
+    function copyPrice() {
+        if (!window._currentPrice) return;
+        const text = '银饰 ¥' + window._currentPrice;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => flashBtn());
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta);
+            ta.select(); document.execCommand('copy');
+            document.body.removeChild(ta);
+            flashBtn();
+        }
+    }
+
+    function flashBtn() {
+        const btn = document.querySelector('.live-price-copy');
+        const old = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = old; }, 1800);
+    }
+
+    // ===== 保存记录 =====
+    function addToHistory() {
+        const threshold = parseFloat(document.getElementById('discountThreshold').value) || 3000;
+        const discountRate = parseFloat(document.getElementById('discountRate').value) || 0.7;
+        const intlRate = parseFloat(document.getElementById('intlRate').value) || 480;
+        const domesticRate = parseFloat(document.getElementById('domesticRate').value) || 8;
+
+        let record = { mode: currentMode, time: new Date().toLocaleString('zh-CN') };
+
+        if (currentMode === 'gram') {
+            const grams = parseFloat(document.getElementById('grams').value);
+            if (!grams) { alert('请先输入银饰克数'); return; }
+            const silverPrice = parseFloat(document.getElementById('silverPrice').value) || 0;
+            const retailPrice = grams * silverPrice;
+            const isDiscount = retailPrice >= threshold;
+            const costPrice = isDiscount ? retailPrice * discountRate : retailPrice;
+            const saving = retailPrice - costPrice;
+            const weightKg = grams / 1000;
+            const intlLog = weightKg * intlRate;
+            const domLog = (weightKg < 1 ? 1 : weightKg) * domesticRate;
+            const totalLog = intlLog + domLog;
+            const totalCost = costPrice + totalLog;
+            const profit = retailPrice - totalCost;
+            const profitRate = retailPrice > 0 ? (profit / retailPrice * 100) : 0;
+            Object.assign(record, { grams, silverPrice, retailPrice, costPrice, saving, intlLog, domLog, totalLog, totalCost, profit, profitRate, isDiscount });
+        } else {
+            const retailPrice = parseFloat(document.getElementById('fixedPrice').value);
+            const grams = parseFloat(document.getElementById('fixedGrams').value) || 0;
+            if (!retailPrice) { alert('请先输入商品售价'); return; }
+            const costPrice = retailPrice * discountRate;
+            const saving = retailPrice - costPrice;
+            const weightKg = grams / 1000;
+            const intlLog = weightKg * intlRate;
+            const domLog = (weightKg < 1 ? 1 : weightKg) * domesticRate;
+            const totalLog = intlLog + domLog;
+            const totalCost = costPrice + (totalLog > 0 ? totalLog : 0);
+            const profit = retailPrice - totalCost;
+            const profitRate = retailPrice > 0 ? (profit / retailPrice * 100) : 0;
+            Object.assign(record, { grams, retailPrice, costPrice, saving, intlLog, domLog, totalLog, totalCost, profit, profitRate, isDiscount: true, isFixed: true });
+        }
+
+        history.unshift(record);
+        if (history.length > 50) history = history.slice(0, 50);
+        localStorage.setItem('silverHistory', JSON.stringify(history));
+        alert('已保存');
+    }
+
+    // ===== 渲染历史 =====
+    function renderHistory() {
+        const el = document.getElementById('historyList');
+        if (!history.length) {
+            el.innerHTML = '<div style="text-align:center;color:#bbb;padding:40px 0;font-size:14px;">暂无记录<br><span style="font-size:12px;">去「定价」页计算并保存</span></div>';
+            return;
+        }
+        const dr = parseFloat(document.getElementById('discountRate').value) || 0.7;
+        el.innerHTML = history.map(h => {
+            const modeTag = h.mode === 'fixed' ? ' <span class="save-tag">一口价</span>' : (h.isDiscount ? ' <span class="save-tag">' + (dr*10).toFixed(1) + '折</span>' : '');
+            const gramsInfo = h.grams ? h.grams.toFixed(1) + 'g' : '—';
+            const logText = (h.intlLog !== undefined) ? ('国际¥' + h.intlLog.toFixed(0) + ' + 国内¥' + h.domLog.toFixed(0)) : ('物流¥' + (h.logistics || 0).toFixed(0));
+            return `<div class="history-item">
+                <div>
+                    <div style="font-weight:bold;margin-bottom:3px;">${gramsInfo} 银饰${modeTag}</div>
+                    <div class="history-cost">售价 ¥${h.retailPrice.toFixed(0)} · 进货 ¥${h.costPrice.toFixed(0)} · ${logText}</div>
+                    <div style="font-size:11px;color:#bbb;margin-top:3px;">${h.time}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="history-price">¥${Math.round(h.retailPrice)}</div>
+                    <div style="margin-top:3px;">
+                        <span class="badge badge-profit">利 ¥${h.profit.toFixed(0)}</span>
+                        <span class="badge badge-rate">${h.profitRate.toFixed(0)}%</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function clearHistory() {
+        if (!confirm('确定清空所有银饰记录？')) return;
+        history = [];
+        localStorage.removeItem('silverHistory');
+        renderHistory();
+    }
+
+    // ===== 重置 =====
+    function resetForm() {
+        if (currentMode === 'gram') {
+            document.getElementById('grams').value = '';
+        } else {
+            document.getElementById('fixedPrice').value = '';
+            document.getElementById('fixedGrams').value = '';
+        }
+        hideResult();
+    }
+
+    // ===== 设置 =====
+    function loadSettings() {
+        const s = JSON.parse(localStorage.getItem('silverSettings') || '{}');
+        ['discountThreshold','discountRate','intlRate','domesticRate','defaultSilverPrice'].forEach(k => {
+            const el = document.getElementById(k);
+            if (el && s[k] !== undefined && s[k] !== '') el.value = s[k];
+        });
+        const sp = document.getElementById('silverPrice');
+        if (sp && s.defaultSilverPrice) sp.value = s.defaultSilverPrice;
+    }
+
+    function saveSettings() {
+        const s = {};
+        ['discountThreshold','discountRate','intlRate','domesticRate','defaultSilverPrice'].forEach(k => {
+            const el = document.getElementById(k);
+            if (el) s[k] = el.value;
+        });
+        localStorage.setItem('silverSettings', JSON.stringify(s));
+    }
+
+    function resetSettings() {
+        if (!confirm('恢复全部默认值？')) return;
+        const defaults = {
+            discountThreshold:'3000', discountRate:'0.7',
+            intlRate:'480', domesticRate:'8',
+            defaultSilverPrice:'34'
+        };
+        Object.keys(defaults).forEach(k => {
+            const el = document.getElementById(k);
+            if (el) el.value = defaults[k];
+        });
+        document.getElementById('silverPrice').value = '34';
+        saveSettings();
+        calc();
+    }
+
+    // ===== 初始化 =====
+    loadSettings();
+    switchTab('calc');
+
+    // PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    </script>
+</body>
+</html>
