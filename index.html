@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>泰国服饰定价计算器</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1F4E79">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="定价计算器">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
+            margin: 0; padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 500px; margin: 0 auto; padding: 16px; }
+        .header { text-align: center; color: white; padding: 20px 0 12px; position: relative; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: bold; }
+        .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.85; }
+        .card {
+            background: white; border-radius: 16px; padding: 20px;
+            margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 15px; font-weight: bold; color: #1F4E79;
+            margin-bottom: 14px; display: flex; align-items: center;
+        }
+        .card-title::before {
+            content: ""; display: inline-block;
+            width: 4px; height: 15px; background: #1F4E79;
+            border-radius: 2px; margin-right: 8px;
+        }
+        .input-group { margin-bottom: 14px; }
+        .input-group label {
+            display: block; font-size: 13px; color: #666; margin-bottom: 6px;
+        }
+        .input-group input {
+            width: 100%; height: 46px; border: 2px solid #E0E0E0;
+            border-radius: 8px; padding: 0 14px; font-size: 17px; color: #333;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus { outline: none; border-color: #667eea; }
+        .markup-hint { font-size: 12px; color: #999; margin-top: 5px; }
+        .markup-hint .auto-tag { color: #667eea; font-weight: bold; }
+        .markup-hint .custom-tag { color: #FF6B6B; font-weight: bold; }
+        .btn {
+            width: 100%; height: 50px; border: none; border-radius: 12px;
+            font-size: 17px; font-weight: bold; color: white; cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+        .btn-secondary { background: #E0E0E0; color: #666; margin-top: 10px; }
+
+        /* 直播报价大卡片 */
+        .live-price-card {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white; border-radius: 18px; padding: 22px 20px 18px;
+            text-align: center; margin-bottom: 14px;
+            box-shadow: 0 8px 24px rgba(255,107,107,0.45);
+            animation: popIn 0.35s ease-out; display: none;
+        }
+        .live-price-card.show { display: block; }
+        @keyframes popIn {
+            0% { transform: scale(0.88); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .live-price-top { font-size: 13px; letter-spacing: 3px; opacity: 0.9; margin-bottom: 6px; }
+        .live-price-amount {
+            font-size: 62px; font-weight: bold; line-height: 1;
+            margin: 8px 0; text-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+        .live-price-detail { font-size: 13px; opacity: 0.88; margin: 8px 0 14px; }
+        .live-price-copy {
+            background: rgba(255,255,255,0.22); color: white;
+            border: 1px solid rgba(255,255,255,0.4); border-radius: 8px;
+            padding: 9px 0; font-size: 14px; font-weight: bold;
+            width: 100%; cursor: pointer;
+        }
+        .live-price-copy:active { background: rgba(255,255,255,0.35); }
+
+        /* 详情结果卡 */
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border-radius: 16px; padding: 16px 20px;
+            margin-bottom: 14px; display: none;
+        }
+        .result-card.show { display: block; }
+        .result-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.18);
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-label { font-size: 13px; opacity: 0.88; }
+        .result-value { font-size: 17px; font-weight: bold; }
+        .profit-pos { color: #69F0AE; }
+        .profit-neg { color: #FF8A80; }
+
+        /* 历史记录 */
+        .history-list { max-height: 280px; overflow-y: auto; }
+        .history-item {
+            display: flex; justify-content: space-between; padding: 12px;
+            background: #F5F5F5; border-radius: 10px; margin-bottom: 8px; font-size: 13px;
+        }
+        .history-price { color: #1B5E20; font-weight: bold; font-size: 16px; }
+        .history-cost { color: #777; margin-top: 3px; }
+        .badge { display: inline-block; padding: 3px 7px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 4px; }
+        .badge-profit { background: #E8F5E9; color: #1B5E20; }
+        .badge-rate { background: #E3F2FD; color: #1565C0; }
+
+        /* 设置页 */
+        .settings-group { display: flex; gap: 10px; margin-bottom: 12px; }
+        .settings-group .input-group { flex: 1; margin-bottom: 0; }
+        .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+        /* 标签栏 */
+        .tab-bar {
+            display: flex; background: white; border-radius: 12px;
+            padding: 4px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .tab {
+            flex: 1; height: 42px; border: none; background: transparent;
+            font-size: 13px; font-weight: bold; color: #888; cursor: pointer;
+            border-radius: 8px; transition: all 0.25s;
+        }
+        .tab.active { background: #1F4E79; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a class="nav-back" href="silver.html" style="position:absolute;left:0;top:22px;color:white;text-decoration:none;font-size:14px;background:rgba(255,255,255,0.18);padding:6px 12px;border-radius:8px;">💍 银饰</a>
+            <h1>🇹🇭 服饰定价计算器</h1>
+            <p>泰国代购直播专用</p>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab active" onclick="switchTab('calc', this)">💰 定价</button>
+            <button class="tab" onclick="switchTab('history', this)">📋 记录</button>
+            <button class="tab" onclick="switchTab('settings', this)">⚙️ 设置</button>
+        </div>
+
+        <!-- 定价页 -->
+        <div id="page-calc" class="page active">
+            <!-- 直播报价大卡片：在保存按钮上方 -->
+            <div class="live-price-card" id="livePriceCard">
+                <div class="live-price-top">📢 直播报价</div>
+                <div class="live-price-amount" id="livePriceAmount">¥—</div>
+                <div class="live-price-detail" id="livePriceDetail">净利润 ¥— · 利润率 —%</div>
+                <button class="live-price-copy" id="copyBtn" onclick="copyPrice()">📋 复制报价给客人</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">商品信息</div>
+
+                <div class="input-group">
+                    <label>泰铢成本（THB）</label>
+                    <input type="number" id="costTHB" placeholder="输入泰铢价格" oninput="onCostInput()">
+                </div>
+
+                <div class="input-group">
+                    <label>重量（kg，不填默认 0.4）</label>
+                    <input type="number" id="weight" placeholder="如 0.3" step="0.1" oninput="recalc()">
+                </div>
+
+                <div class="input-group">
+                    <label>加价金额（元）</label>
+                    <input type="number" id="markupAmt" placeholder="不填则自动匹配" step="1" oninput="onMarkupInput()">
+                    <div class="markup-hint" id="markupHint">留空 = 按成本自动匹配加价金额</div>
+                </div>
+            </div>
+
+            <!-- 详情结果卡 -->
+            <div class="result-card" id="resultCard">
+                <div class="result-item">
+                    <span class="result-label">人民币成本</span>
+                    <span class="result-value" id="costRMB">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">物流成本</span>
+                    <span class="result-value" id="logistics">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">加价金额</span>
+                    <span class="result-value" id="markupAmtShow">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">净利润</span>
+                    <span class="result-value" id="profit">¥—</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">利润率</span>
+                    <span class="result-value" id="profitRate">—%</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="addToHistory()">✅ 保存记录</button>
+            <button class="btn btn-secondary" onclick="resetForm()">🔄 重置</button>
+        </div>
+
+        <!-- 历史记录页 -->
+        <div id="page-history" class="page">
+            <div class="card">
+                <div class="card-title">定价记录</div>
+                <div class="history-list" id="historyList">
+                    <div style="text-align:center;color:#bbb;padding:40px 0;font-size:14px;">
+                        暂无记录<br><span style="font-size:12px;">去「定价」页计算并保存</span>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="clearHistory()" style="margin-top:12px;">🗑️ 清空记录</button>
+            </div>
+        </div>
+
+        <!-- 设置页 -->
+        <div id="page-settings" class="page">
+            <div class="card">
+                <div class="card-title">基础参数</div>
+                <div class="settings-group">
+                    <div class="input-group">
+                        <label>Visa汇率（THB → CNY）</label>
+                        <input type="number" id="exchangeRate" value="0.2077" step="0.0001" onchange="saveSettings()">
+                    </div>
+                    <div class="input-group" style="flex: 0 0 auto; min-width: 110px;">
+                        <label>&nbsp;</label>
+                        <button class="btn" id="refreshRateBtn" onclick="fetchExchangeRate()" style="height: 46px; background: #1F4E79; color: white; font-size: 14px; padding: 0 14px;">🔄 刷新</button>
+                    </div>
+                </div>
+                <div class="hint" id="rateStatus" style="margin-bottom: 12px;">启动时自动拉取中间价汇率</div>
+                    <div class="input-group">
+                        <label>默认重量（kg）</label>
+                        <input type="number" id="avgWeight" value="0.4" step="0.1" onchange="saveSettings()">
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="input-group">
+                        <label>集运费（元/kg）</label>
+                        <input type="number" id="forwardingRate" value="35" onchange="saveSettings()">
+                    </div>
+                    <div class="input-group">
+                        <label>国内快递（元/kg）</label>
+                        <input type="number" id="domesticRate" value="8" onchange="saveSettings()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">自动加价分档（按人民币成本）</div>
+                <div class="hint" style="margin-bottom:10px;">加价金额留空时自动填入这里设置的值</div>
+                <div class="input-group">
+                    <label>&lt; 100元（默认 +65 元）</label>
+                    <input type="number" id="amt1" placeholder="65" step="1" onchange="saveSettings()">
+                </div>
+                <div class="input-group">
+                    <label>100 – 300元（默认 +75 元）</label>
+                    <input type="number" id="amt2" placeholder="75" step="1" onchange="saveSettings()">
+                </div>
+                <div class="input-group">
+                    <label>300 – 500元（默认 +98 元）</label>
+                    <input type="number" id="amt3" placeholder="98" step="1" onchange="saveSettings()">
+                </div>
+                <div class="input-group">
+                    <label>500 – 1000元（默认 +108 元）</label>
+                    <input type="number" id="amt4" placeholder="108" step="1" onchange="saveSettings()">
+                </div>
+                <div class="input-group">
+                    <label>1000元以上（默认 +118 元）</label>
+                    <input type="number" id="amt5" placeholder="118" step="1" onchange="saveSettings()">
+                </div>
+                <button class="btn btn-primary" onclick="resetSettings()" style="margin-top:6px;">🔄 恢复默认</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ===== 状态 =====
+    let history = JSON.parse(localStorage.getItem('pricingHistory') || '[]');
+    let userTouchedMarkup = false;
+
+    // 默认加价金额（元）
+    const DEFAULT_AMOUNTS = [65, 75, 98, 108, 118];
+    const AMT_IDS = ['amt1','amt2','amt3','amt4','amt5'];
+
+    // ===== 初始化 =====
+    loadSettings();
+    loadHistory();
+    updateRateStatus();
+    fetchExchangeRate();  // 启动时拉取一次实时汇率
+
+    // ===== 标签切换 =====
+    function switchTab(name, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('page-' + name).classList.add('active');
+        if (el) el.classList.add('active');
+        if (name === 'history') renderHistory();
+    }
+
+    // ===== 输入泰铢成本时 =====
+    function onCostInput() {
+        const v = document.getElementById('costTHB').value.trim();
+        if (!v) { hideResult(); return; }
+        // 每次重新输成本，如果用户没手动改过，就自动填加价
+        if (!userTouchedMarkup) autoFillMarkup();
+        recalc();
+    }
+
+    // ===== 手动改加价金额时 =====
+    function onMarkupInput() {
+        userTouchedMarkup = true;
+        updateMarkupHint();
+        recalc();
+    }
+
+    // ===== 自动填加价金额 =====
+    function autoFillMarkup() {
+        const costTHB = parseFloat(document.getElementById('costTHB').value);
+        if (!costTHB) return;
+        const rate = parseFloat(document.getElementById('exchangeRate').value) || 0.2077;
+        const costRMB = costTHB * rate;
+        const amt = getAutoAmount(costRMB);
+        document.getElementById('markupAmt').value = amt;
+        updateMarkupHint();
+    }
+
+    // ===== 更新提示文字 =====
+    function updateMarkupHint() {
+        const el = document.getElementById('markupHint');
+        const v = document.getElementById('markupAmt').value.trim();
+        if (!v) {
+            el.innerHTML = '留空 = 按成本自动匹配加价金额';
+        } else {
+            el.innerHTML = '<span class="custom-tag">手动</span> 加价 ' + v + ' 元（清空后恢复自动）';
+        }
+    }
+
+    // ===== 核心计算 =====
+    function recalc() {
+        const costTHB = parseFloat(document.getElementById('costTHB').value);
+        if (!costTHB) { hideResult(); return; }
+
+        const rate = parseFloat(document.getElementById('exchangeRate').value) || 0.2077;
+        const weight = parseFloat(document.getElementById('weight').value)
+            || parseFloat(document.getElementById('avgWeight').value) || 0.4;
+        const forwarding = parseFloat(document.getElementById('forwardingRate').value) || 35;
+        const domestic = parseFloat(document.getElementById('domesticRate').value) || 8;
+        const markupAmt = parseFloat(document.getElementById('markupAmt').value) || 0;
+
+        const costRMB = costTHB * rate;
+        const weightKg = weight;  // 按实际重量算，不进位
+        const logistics = weightKg * (domestic + forwarding);
+        const suggestedPrice = costRMB + markupAmt;
+        const profit = suggestedPrice - costRMB - logistics;
+        const profitRate = suggestedPrice > 0 ? (profit / suggestedPrice * 100) : 0;
+
+        // 详情卡
+        document.getElementById('resultCard').classList.add('show');
+        document.getElementById('costRMB').textContent = '¥' + costRMB.toFixed(2);
+        document.getElementById('logistics').textContent = '¥' + logistics.toFixed(2) + ' (' + weightKg.toFixed(2) + 'kg)';
+        document.getElementById('markupAmtShow').textContent = '¥' + markupAmt.toFixed(2);
+        document.getElementById('profit').textContent = '¥' + profit.toFixed(2);
+        document.getElementById('profit').className = 'result-value ' + (profit >= 0 ? 'profit-pos' : 'profit-neg');
+        document.getElementById('profitRate').textContent = profitRate.toFixed(1) + '%';
+
+        // 直播报价大卡片（取整）
+        const intPrice = Math.round(suggestedPrice);
+        document.getElementById('livePriceCard').classList.add('show');
+        document.getElementById('livePriceAmount').textContent = '¥' + intPrice;
+        document.getElementById('livePriceDetail').textContent =
+            '净利润 ¥' + Math.round(profit) + ' · 利润率 ' + Math.round(profitRate) + '%';
+        window._currentPrice = intPrice;
+    }
+
+    function hideResult() {
+        document.getElementById('resultCard').classList.remove('show');
+        document.getElementById('livePriceCard').classList.remove('show');
+        window._currentPrice = null;
+    }
+
+    // ===== 根据成本取自动加价金额 =====
+    function getAutoAmount(costRMB) {
+        let id;
+        if (costRMB < 100) id = 'amt1';
+        else if (costRMB < 300) id = 'amt2';
+        else if (costRMB < 500) id = 'amt3';
+        else if (costRMB < 1000) id = 'amt4';
+        else id = 'amt5';
+        const idx = AMT_IDS.indexOf(id);
+        const custom = parseFloat(document.getElementById(id).value);
+        return (custom && custom > 0) ? custom : DEFAULT_AMOUNTS[idx];
+    }
+
+    // ===== 复制报价 =====
+    function copyPrice() {
+        if (!window._currentPrice) return;
+        const text = '泰国直邮 ¥' + window._currentPrice;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => flashBtn('✓ ' + text));
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta);
+            ta.select(); document.execCommand('copy');
+            document.body.removeChild(ta);
+            flashBtn('✓ ' + text);
+        }
+    }
+
+    function flashBtn(msg) {
+        const btn = document.getElementById('copyBtn');
+        const old = btn.textContent;
+        btn.textContent = msg;
+        setTimeout(() => { btn.textContent = old; }, 1800);
+    }
+
+    // ===== 保存记录 =====
+    function addToHistory() {
+        const costTHB = parseFloat(document.getElementById('costTHB').value);
+        if (!costTHB) { alert('请先输入泰铢成本'); return; }
+        const rate = parseFloat(document.getElementById('exchangeRate').value) || 0.2077;
+        const costRMB = costTHB * rate;
+        const markupAmt = parseFloat(document.getElementById('markupAmt').value) || 0;
+        const suggestedPrice = costRMB + markupAmt;
+        const weight = parseFloat(document.getElementById('weight').value)
+            || parseFloat(document.getElementById('avgWeight').value) || 0.4;
+        const forwarding = parseFloat(document.getElementById('forwardingRate').value) || 35;
+        const domestic = parseFloat(document.getElementById('domesticRate').value) || 8;
+        const logistics = weight * (domestic + forwarding);
+        const profit = suggestedPrice - costRMB - logistics;
+        const profitRate = suggestedPrice > 0 ? (profit / suggestedPrice * 100) : 0;
+
+        history.unshift({
+            costTHB, costRMB, suggestedPrice,
+            logistics, profit, profitRate,
+            markupAmt, weight,
+            time: new Date().toLocaleString('zh-CN')
+        });
+        if (history.length > 50) history = history.slice(0, 50);
+        localStorage.setItem('pricingHistory', JSON.stringify(history));
+        alert('✅ 已保存');
+    }
+
+    function loadHistory() {}
+
+    // ===== 渲染历史 =====
+    function renderHistory() {
+        const el = document.getElementById('historyList');
+        if (!history.length) {
+            el.innerHTML = '<div style="text-align:center;color:#bbb;padding:40px 0;font-size:14px;">暂无记录<br><span style="font-size:12px;">去「定价」页计算并保存</span></div>';
+            return;
+        }
+        el.innerHTML = history.map(h => `
+            <div class="history-item">
+                <div>
+                    <div style="font-weight:bold;margin-bottom:3px;">${h.costTHB} 泰铢 (${h.weight}kg)</div>
+                    <div class="history-cost">成本 ¥${h.costRMB.toFixed(2)} + 物流 ¥${h.logistics.toFixed(2)}</div>
+                    <div style="font-size:11px;color:#bbb;margin-top:3px;">${h.time}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="history-price">¥${Math.round(h.suggestedPrice)}</div>
+                    <div style="margin-top:3px;">
+                        <span class="badge badge-profit">利 ¥${h.profit.toFixed(0)}</span>
+                        <span class="badge badge-rate">${h.profitRate.toFixed(0)}%</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function clearHistory() {
+        if (!confirm('确定清空所有记录？')) return;
+        history = [];
+        localStorage.removeItem('pricingHistory');
+        renderHistory();
+    }
+
+    // ===== 重置 =====
+    function resetForm() {
+        document.getElementById('costTHB').value = '';
+        document.getElementById('weight').value = '';
+        document.getElementById('markupAmt').value = '';
+        userTouchedMarkup = false;
+        updateMarkupHint();
+        hideResult();
+    }
+
+    // ===== 设置 =====
+    function loadSettings() {
+        const s = JSON.parse(localStorage.getItem('pricingSettings') || '{}');
+        const keys = ['exchangeRate','avgWeight','forwardingRate','domesticRate', ...AMT_IDS];
+        keys.forEach(k => {
+            const el = document.getElementById(k);
+            if (el && s[k] !== undefined && s[k] !== '') el.value = s[k];
+        });
+    }
+
+    function saveSettings() {
+        const s = {};
+        ['exchangeRate','avgWeight','forwardingRate','domesticRate', ...AMT_IDS].forEach(k => {
+            const el = document.getElementById(k);
+            if (el) s[k] = el.value;
+        });
+        localStorage.setItem('pricingSettings', JSON.stringify(s));
+    }
+
+    function resetSettings() {
+        if (!confirm('恢复全部默认值？')) return;
+        const defaults = {exchangeRate:'0.2077',avgWeight:'0.4',forwardingRate:'35',domesticRate:'8'};
+        Object.keys(defaults).forEach(k => {
+            const el = document.getElementById(k);
+            if (el) el.value = defaults[k];
+        });
+        AMT_IDS.forEach(k => {
+            const el = document.getElementById(k);
+            if (el) el.value = '';
+        });
+        saveSettings();
+    }
+
+    // ===== 实时汇率（免费 API：open.er-api.com）=====
+    async function fetchExchangeRate() {
+        const btn = document.getElementById('refreshRateBtn');
+        const status = document.getElementById('rateStatus');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ 拉取中...'; }
+        status.textContent = '⏳ 正在拉取最新汇率...';
+        try {
+            const res = await fetch('https://open.er-api.com/v6/latest/THB');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (data.result !== 'success' || !data.rates || !data.rates.CNY) {
+                throw new Error('返回数据格式错误');
+            }
+            const rate = data.rates.CNY;
+            // 中间价
+            const midRate = parseFloat(rate);
+            // Visa 实际汇率比中间价低 1-2%，这里用中间价
+            document.getElementById('exchangeRate').value = midRate.toFixed(4);
+            const now = new Date().toISOString();
+            // 存到 localStorage
+            const s = JSON.parse(localStorage.getItem('pricingSettings') || '{}');
+            s.exchangeRate = midRate.toFixed(4);
+            s.rateUpdatedAt = now;
+            localStorage.setItem('pricingSettings', JSON.stringify(s));
+            status.innerHTML = '✅ 已更新（中间价，Visa 实际可能低 1-2%）：<b>' + midRate.toFixed(4) + '</b> · ' + new Date().toLocaleString('zh-CN');
+            if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
+        } catch (e) {
+            console.error('汇率拉取失败:', e);
+            status.innerHTML = '⚠️ 拉取失败（' + e.message + '），使用上次保存的汇率。点击 🔄 重试。';
+            if (btn) { btn.textContent = '🔄 刷新'; btn.disabled = false; }
+        }
+    }
+
+    function updateRateStatus() {
+        const s = JSON.parse(localStorage.getItem('pricingSettings') || '{}');
+        const status = document.getElementById('rateStatus');
+        if (s.rateUpdatedAt) {
+            const t = new Date(s.rateUpdatedAt);
+            const now = new Date();
+            const diffMin = Math.floor((now - t) / 60000);
+            let ago;
+            if (diffMin < 1) ago = '刚刚';
+            else if (diffMin < 60) ago = diffMin + ' 分钟前';
+            else if (diffMin < 1440) ago = Math.floor(diffMin / 60) + ' 小时前';
+            else ago = Math.floor(diffMin / 1440) + ' 天前';
+            status.innerHTML = '上次更新：' + ago + '（' + s.exchangeRate + '）· 打开应用或点 🔄 自动拉取最新';
+        } else {
+            status.textContent = '启动时自动拉取中间价汇率';
+        }
+    }
+
+    // PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    </script>
+</body>
+</html>
